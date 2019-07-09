@@ -4,7 +4,7 @@
 //
 //  Created by 路 on 2019/7/8.
 //  Copyright © 2019年 路. All rights reserved.
-//
+//  https://github.com/568071718/ListView
 
 #import <UIKit/UIKit.h>
 
@@ -37,7 +37,7 @@ typedef NS_ENUM(NSInteger ,DSHListHeaderViewScaleMode) {
 @property (strong ,nonatomic) UIView <DSHListHeaderView>*headerView;
 
 /// 其他自定义视图
-@property (strong ,nonatomic ,readonly) NSMutableArray <UIView <DSHListViewCell>*>*cells;
+@property (strong ,nonatomic) NSArray <UIView <DSHListViewCell>*>*cells;
 
 /// 分页视图头部视图
 @property (strong ,nonatomic) UIView <DSHListPageViewHeader>*pageViewHeader;

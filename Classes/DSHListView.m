@@ -16,7 +16,6 @@
 @end
 
 @implementation DSHListView
-@synthesize cells = _cells;
 
 - (id)init; {
     return [self initWithFrame:CGRectZero];
@@ -75,7 +74,7 @@
     }
     
     if (_pageView) {
-        CGFloat pageViewHeight = (_pageViewHeader.offsetY >= 0) ? self.frame.size.height - _pageViewHeader.frame.size.height - _pageViewHeader.offsetY : self.frame.size.height;
+        CGFloat pageViewHeight = (_pageViewHeader && _pageViewHeader.offsetY >= 0) ? self.frame.size.height - _pageViewHeader.frame.size.height - _pageViewHeader.offsetY : self.frame.size.height;
         _pageView.frame = CGRectMake(0, contentSize.height, self.frame.size.width, pageViewHeight);
         [self addSubview:_pageView];
         contentSize.height += _pageView.frame.size.height;
@@ -204,9 +203,12 @@
     }
 }
 
-- (NSMutableArray <UIView <DSHListViewCell>*>*)cells; {
-    if (!_cells) {
-        _cells = [NSMutableArray array];
-    } return _cells;
+- (void)setCells:(NSArray<UIView<DSHListViewCell> *> *)cells; {
+    if (_cells) {
+        [_cells makeObjectsPerformSelector:@selector(removeFromSuperview)];
+    }
+    _cells = cells;
+    [self reload];
 }
+
 @end
