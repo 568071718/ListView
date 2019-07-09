@@ -1,0 +1,21 @@
+PODS:
+  - DSHPageViewController (0.0.1)
+
+DEPENDENCIES:
+  - DSHPageViewController (from `https://github.com/568071718/PageViewController.git`)
+
+EXTERNAL SOURCES:
+  DSHPageViewController:
+    :git: https://github.com/568071718/PageViewController.git
+
+CHECKOUT OPTIONS:
+  DSHPageViewController:
+    :commit: 950da129394865d661b0ca8d75c4f53c9be34857
+    :git: https://github.com/568071718/PageViewController.git
+
+SPEC CHECKSUMS:
+  DSHPageViewController: a9f85ca701219930bba18c4049c69cb322b32da6
+
+PODFILE CHECKSUM: 7e5f530ec0f8db29b260c71116ec6054e85a5dce
+
+COCOAPODS: 1.5.0
