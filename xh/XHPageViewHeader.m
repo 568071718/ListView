@@ -29,6 +29,10 @@
     _button3.layer.masksToBounds = YES;
 }
 
+- (UIView *)dsh_view; {
+    return self;
+}
+
 #pragma mark - action
 - (IBAction)clickActions:(UIView *)sender {
     if ([_delegate respondsToSelector:@selector(pageViewHeader:clickedButtonWithButtonIndex:)]) {

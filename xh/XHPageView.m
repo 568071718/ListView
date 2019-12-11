@@ -10,23 +10,7 @@
 
 @implementation XHPageView
 
-- (id)init; {
-    self = [super init];
-    if (self) {
-        
-        XHDemoTableViewController *vc1 = [[XHDemoTableViewController alloc] initWithParams:0];
-        XHDemoTableViewController *vc2 = [[XHDemoTableViewController alloc] initWithParams:1];
-        XHDemoTableViewController *vc3 = [[XHDemoTableViewController alloc] initWithParams:2];
-        
-        _viewController = [[DSHPageViewController alloc] initWithViewControllers:@[vc1 ,vc2 ,vc3]];
-        [self addSubview:_viewController.view];
-        
-    } return self;
+- (UIView *)dsh_view; {
+    return self.view;
 }
-
-- (void)layoutSubviews; {
-    [super layoutSubviews];
-    _viewController.view.frame = self.bounds;
-}
-
 @end

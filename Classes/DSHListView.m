@@ -47,40 +47,52 @@
 }
 
 - (void)reload; {
-    [_headerView removeFromSuperview];
-    [_pageViewHeader removeFromSuperview];
-    [_pageView removeFromSuperview];
-    [_cells makeObjectsPerformSelector:@selector(removeFromSuperview)];
+    [self.subviews makeObjectsPerformSelector:@selector(removeFromSuperview)];
     
     CGSize contentSize = self.bounds.size;
     contentSize.height = 0;
     if (_headerView) {
-        _headerView.frame = CGRectMake(0, 0, self.frame.size.width, _headerView.viewHeight);
-        [self addSubview:_headerView];
+        _headerView.dsh_view.frame = CGRectMake(0, 0, self.frame.size.width, _headerView.viewHeight);
+        [self addSubview:_headerView.dsh_view];
         contentSize.height += _headerView.viewHeight;
     }
     
-    for (UIView <DSHListViewCell>*cell in _cells) {
-        cell.frame = CGRectMake(0, contentSize.height, self.frame.size.width, cell.viewHeight);
-        [self addSubview:cell];
+    for (id<DSHListViewCell> cell in _cells) {
+        cell.dsh_view.frame = CGRectMake(0, contentSize.height, self.frame.size.width, cell.viewHeight);
+        [self addSubview:cell.dsh_view];
         contentSize.height += cell.viewHeight;
     }
     
     if (_pageViewHeader) {
         _page_header_offset_y = contentSize.height;
-        _pageViewHeader.frame = CGRectMake(0, _page_header_offset_y, self.frame.size.width, _pageViewHeader.viewHeight);
-        [self addSubview:_pageViewHeader];
+        _pageViewHeader.dsh_view.frame = CGRectMake(0, _page_header_offset_y, self.frame.size.width, _pageViewHeader.viewHeight);
+        [self addSubview:_pageViewHeader.dsh_view];
         contentSize.height += _pageViewHeader.viewHeight;
     }
     
     if (_pageView) {
-        CGFloat pageViewHeight = (_pageViewHeader && _pageViewHeader.offsetY >= 0) ? self.frame.size.height - _pageViewHeader.frame.size.height - _pageViewHeader.offsetY : self.frame.size.height;
-        _pageView.frame = CGRectMake(0, contentSize.height, self.frame.size.width, pageViewHeight);
-        [self addSubview:_pageView];
-        contentSize.height += _pageView.frame.size.height;
+        CGFloat pageViewHeight = (_pageViewHeader && _pageViewHeader.offsetY >= 0) ? self.frame.size.height - _pageViewHeader.viewHeight - _pageViewHeader.offsetY : self.frame.size.height;
+        _pageView.dsh_view.frame = CGRectMake(0, contentSize.height, self.frame.size.width, pageViewHeight);
+        [self addSubview:_pageView.dsh_view];
+        contentSize.height += pageViewHeight;
     }
     self.contentSize = contentSize;
-    [self bringSubviewToFront:_pageViewHeader];
+    [self bringSubviewToFront:_pageViewHeader.dsh_view];
+}
+
+- (void)reloadData:(id)body; {
+    [self reloadData:body forSubview:_headerView];
+    [self reloadData:body forSubview:_pageViewHeader];
+    [self reloadData:body forSubview:_pageView];
+    for (id<DSHListViewCell> cell in _cells) {
+        [self reloadData:body forSubview:cell];
+    }
+}
+
+- (void)reloadData:(id)body forSubview:(id<DSHListViewSubview>)subview; {
+    if ([subview respondsToSelector:@selector(dsh_list_view_reloadData:)]) {
+        [subview dsh_list_view_reloadData:body];
+    }
 }
 
 #pragma mark -
@@ -103,7 +115,7 @@
         
         // 实现头部视图缩放效果
         if (_headerView) {
-            CGRect frame = _headerView.frame;
+            CGRect frame = _headerView.dsh_view.frame;
             frame.origin.x = 0; frame.origin.y = 0;
             frame.size.width = self.frame.size.width; // 拉满宽度
             if (_headerView.scaleMode == DSHListHeaderViewScaleModeNone) {
@@ -128,20 +140,20 @@
                     frame.origin.y = contentOffset.y;
                 }
             }
-            _headerView.frame = frame;
+            _headerView.dsh_view.frame = frame;
         }
         
         // 悬浮效果
         if (_pageViewHeader && _pageViewHeader.offsetY >= 0) {
-            CGRect frame = _pageViewHeader.frame;
+            CGRect frame = _pageViewHeader.dsh_view.frame;
             frame.origin.y = _page_header_offset_y;
-            _pageViewHeader.frame = frame;
+            _pageViewHeader.dsh_view.frame = frame;
         }
         
     } else if (object == _scrollView) {
         if (_base_scroll_enabled) {
-            if (!CGPointEqualToPoint(CGPointZero, _scrollView.contentOffset)) {
-                _scrollView.contentOffset = CGPointMake(0, 0);
+            if (_scrollView.contentOffset.y != 0) {
+                _scrollView.contentOffset = CGPointZero;
             }
         } else if (_scrollView.contentOffset.y <= 0) {
             _base_scroll_enabled = YES;
@@ -156,34 +168,21 @@
 
 #pragma mark -
 - (void)setHeaderView:(UIView<DSHListHeaderView> *)headerView; {
-    if (headerView && headerView == _headerView) {
-        return;
-    }
-    if (_headerView) {
-        [_headerView removeFromSuperview];
-    }
     _headerView = headerView;
     [self reload];
 }
 
-- (void)setPageViewHeader:(UIView<DSHListPageViewHeader> *)pageViewHeader {
-    if (pageViewHeader && pageViewHeader == _pageViewHeader) {
-        return;
-    }
-    if (_pageViewHeader) {
-        [_pageViewHeader removeFromSuperview];
-    }
+- (void)setPageViewHeader:(UIView<DSHListPageViewHeader> *)pageViewHeader; {
     _pageViewHeader = pageViewHeader;
     [self reload];
 }
 
-- (void)setPageView:(UIView *)pageView; {
-    if (pageView && pageView == _pageView) {
-        return;
-    }
-    if (_pageView) {
-        [_pageView removeFromSuperview];
-    }
+- (void)setCells:(NSArray<id<DSHListViewCell>> *)cells; {
+    _cells = cells;
+    [self reload];
+}
+
+- (void)setPageView:(id<DSHListPageView>)pageView; {
     _pageView = pageView;
     [self reload];
 }
@@ -201,14 +200,6 @@
     } else {
         _base_scroll_enabled = YES;
     }
-}
-
-- (void)setCells:(NSArray<UIView<DSHListViewCell> *> *)cells; {
-    if (_cells) {
-        [_cells makeObjectsPerformSelector:@selector(removeFromSuperview)];
-    }
-    _cells = cells;
-    [self reload];
 }
 
 @end

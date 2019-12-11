@@ -32,6 +32,7 @@
 #pragma mark - controller
 - (void)viewDidLoad {
     [super viewDidLoad];
+    self.tableView.showsVerticalScrollIndicator = NO;
 }
 
 - (void)viewWillAppear:(BOOL)animated {

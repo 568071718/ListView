@@ -10,6 +10,7 @@
 #import "XHHeaderView.h"
 #import "XHPageViewHeader.h"
 #import "XHPageView.h"
+#import "XHDemoTableViewController.h"
 
 @interface ViewController () <DSHPageViewControllerDelegate ,XHPageViewHeaderDelegate>
 
@@ -30,17 +31,24 @@
     pageViewHeader.offsetY = 0;
     pageViewHeader.delegate = self;
     
-    XHPageView *pageView = [[XHPageView alloc] init];
-    pageView.viewController.delegate = self;
-    [self addChildViewController:pageView.viewController];
+    XHDemoTableViewController *vc1 = [[XHDemoTableViewController alloc] initWithParams:0];
+    XHDemoTableViewController *vc2 = [[XHDemoTableViewController alloc] initWithParams:1];
+    XHDemoTableViewController *vc3 = [[XHDemoTableViewController alloc] initWithParams:2];
+    XHPageView *pageView = [[XHPageView alloc] initWithViewControllers:@[vc1 ,vc2 ,vc3]];
+    pageView.delegate = self;
+    [self addChildViewController:pageView];
     
-    _listView = [[DSHListView alloc] initWithFrame:self.view.bounds];
+    
+    CGRect frame = self.view.bounds;
+    frame.origin.y = [UIApplication sharedApplication].statusBarFrame.size.height;
+    frame.size.height = frame.size.height - frame.origin.y;
+    _listView = [[DSHListView alloc] initWithFrame:frame];
     _listView.headerView = headerView;
     _listView.pageViewHeader = pageViewHeader;
     _listView.pageView = pageView;
     [self.view addSubview:_listView];
     
-    [self pageViewController:pageView.viewController currentViewControllerIndexDidChange:pageView.viewController.currentViewControllerIndex];
+    [self pageViewController:pageView currentViewControllerIndexDidChange:pageView.currentViewControllerIndex];
 }
 
 #pragma mark -
@@ -55,8 +63,8 @@
 
 - (void)pageViewHeader:(XHPageViewHeader *)pageViewHeader clickedButtonWithButtonIndex:(NSInteger)buttonIndex; {
     XHPageView *pageView = (XHPageView *)_listView.pageView;
-    BOOL aniamtion = labs(buttonIndex - pageView.viewController.currentViewControllerIndex) <= 1;
-    [pageView.viewController setCurrentViewControllerIndex:buttonIndex animated:aniamtion];
+    BOOL aniamtion = labs(buttonIndex - pageView.currentViewControllerIndex) <= 1;
+    [pageView setCurrentViewControllerIndex:buttonIndex animated:aniamtion];
 }
 
 @end

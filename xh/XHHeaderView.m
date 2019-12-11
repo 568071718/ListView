@@ -23,4 +23,8 @@
     _button2.layer.cornerRadius = 5.f;
     _button2.layer.masksToBounds = YES;
 }
+
+- (UIView *)dsh_view; {
+    return self;
+}
 @end

@@ -8,13 +8,11 @@
 
 #import <UIKit/UIKit.h>
 #import <DSHPageViewController.h>
-#import "XHDemoTableViewController.h"
+#import "DSHListView.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface XHPageView : UIView
-
-@property (strong ,nonatomic) DSHPageViewController *viewController;
+@interface XHPageView : DSHPageViewController <DSHListPageView>
 @end
 
 NS_ASSUME_NONNULL_END

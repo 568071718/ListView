@@ -15,37 +15,51 @@ typedef NS_ENUM(NSInteger ,DSHListHeaderViewScaleMode) {
     DSHListHeaderViewScaleModeStatic,
 };
 
-@protocol DSHListHeaderView <NSObject>
+@protocol DSHListViewSubview <NSObject>
+
+- (UIView *)dsh_view;
+@optional
+- (void)dsh_list_view_reloadData:(id)body;
+@end
+
+@protocol DSHListHeaderView <DSHListViewSubview>
 
 @property (assign ,nonatomic) CGFloat viewHeight;
 @property (assign ,nonatomic) DSHListHeaderViewScaleMode scaleMode;
 @end
 
-@protocol DSHListPageViewHeader <NSObject>
+@protocol DSHListViewCell <DSHListViewSubview>
+
+@property (assign ,nonatomic) CGFloat viewHeight;
+@end
+
+@protocol DSHListPageViewHeader <DSHListViewSubview>
 
 @property (assign ,nonatomic) CGFloat viewHeight;
 @property (assign ,nonatomic) CGFloat offsetY; // 悬浮距离顶部位置，设置小于 0 关闭悬浮效果
 @end
 
-@protocol DSHListViewCell <NSObject>
-@property (assign ,nonatomic) CGFloat viewHeight;
+@protocol DSHListPageView <DSHListViewSubview>
 @end
+
 
 @interface DSHListView : UIScrollView
 
 /// 头部视图
-@property (strong ,nonatomic) UIView <DSHListHeaderView>*headerView;
-
+@property (strong ,nonatomic) id<DSHListHeaderView> headerView;
 /// 其他自定义视图
-@property (strong ,nonatomic) NSArray <UIView <DSHListViewCell>*>*cells;
-
+@property (strong ,nonatomic) NSArray <id<DSHListViewCell> >*cells;
 /// 分页视图头部视图
-@property (strong ,nonatomic) UIView <DSHListPageViewHeader>*pageViewHeader;
-
+@property (strong ,nonatomic) id<DSHListPageViewHeader> pageViewHeader;
 /// 分页视图容器
-@property (strong ,nonatomic) UIView *pageView;
-@property (weak ,nonatomic) UIScrollView *scrollView; // 如果实现了分页视图并且分页视图内部有 UIScrollView ，需要指向当前正在展示的 UIScrollView 对象，用来处理拖动手势冲突 (切换分页视图时需要对应的更改此属性)
+@property (strong ,nonatomic) id<DSHListPageView> pageView;
 
-/// 重新布局
-- (void)reload;
+- (void)reload; // 重新布局
+- (void)reloadData:(id)body; // 刷新页面数据(对所有子视图发送 dsh_list_view_reloadData: 消息)
+- (void)reloadData:(id)body forSubview:(id<DSHListViewSubview>)subview; // 刷新页面数据(对指定子视图发送 dsh_list_view_reloadData: 消息)
+
+/**
+ * 如果实现了分页视图并且分页视图内部有 UIScrollView ，需要指向当前正在展示的 UIScrollView 对象，用来处理拖动手势冲突 (切换分页视图时需要对应的更改此属性)
+ */
+@property (weak ,nonatomic) UIScrollView *scrollView;
 @end
