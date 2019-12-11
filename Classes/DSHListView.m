@@ -46,6 +46,13 @@
     [self removeObserver:self forKeyPath:@"contentOffset"];
 }
 
+- (void)layoutSubviews; {
+    [super layoutSubviews];
+    if (self.contentSize.width != self.frame.size.width) {
+        [self reload];
+    }
+}
+
 - (void)reload; {
     [self.subviews makeObjectsPerformSelector:@selector(removeFromSuperview)];
     
