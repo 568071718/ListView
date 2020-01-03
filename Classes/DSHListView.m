@@ -38,6 +38,9 @@
     self.alwaysBounceVertical = YES;
     self.showsVerticalScrollIndicator = NO;
     self.panGestureRecognizer.delegate = self;
+    if (@available(iOS 11.0, *)) {
+        self.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
+    }
     [self addObserver:self forKeyPath:@"contentOffset" options:NSKeyValueObservingOptionNew context:nil];
 }
 
