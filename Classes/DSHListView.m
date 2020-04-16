@@ -9,11 +9,12 @@
 #import "DSHListView.h"
 
 @interface DSHListView () <UIGestureRecognizerDelegate>
-{
-    CGFloat _page_header_offset_y;
-    BOOL _base_scroll_enabled;
-}
-@property (assign ,nonatomic) CGFloat currentWidth;
+
+@property (assign ,nonatomic) CGFloat currentWidth; // 记录宽度，只有在宽度改变了之后才重新布局子视图 (防止 layoutSubviews 多次调用)
+@property (assign ,nonatomic) CGPoint finalContentOffset;
+@property (assign ,nonatomic) CGPoint scrollViewFinalContentOffset;
+@property (assign ,nonatomic) BOOL baseScrollEnabled; // 控制当前是否需要处理拖动手势 (改变自身的 contentOffset)
+@property (assign ,nonatomic) CGFloat offsetHeight; // 最大偏移高度，当自身偏移量超过这个值之后设置 baseScrollEnabled 为 NO，停止改变自身 contentOffset
 @end
 
 @implementation DSHListView
@@ -29,8 +30,10 @@
     [self __setup__];
 }
 - (void)__setup__; {
-    _base_scroll_enabled = YES;
+    _baseScrollEnabled = YES;
     _currentWidth = -1;
+    _finalContentOffset = CGPointMake(0, 0);
+    _scrollViewFinalContentOffset = _finalContentOffset;
     self.alwaysBounceVertical = YES;
     self.showsVerticalScrollIndicator = NO;
     self.panGestureRecognizer.delegate = self;
@@ -71,9 +74,11 @@
         contentSize.height += cell.viewHeight;
     }
     
+    _offsetHeight = contentSize.height;
     if (_stationaryHeaderView) {
-        _page_header_offset_y = contentSize.height;
-        _stationaryHeaderView.dsh_view.frame = CGRectMake(0, _page_header_offset_y, self.frame.size.width, _stationaryHeaderView.viewHeight);
+        CGFloat y = contentSize.height;
+        _offsetHeight = y - _stationaryHeaderView.offsetY;
+        _stationaryHeaderView.dsh_view.frame = CGRectMake(0, y, self.frame.size.width, _stationaryHeaderView.viewHeight);
         if (_stationaryHeaderView.dsh_view.superview != self) {
             [self addSubview:_stationaryHeaderView.dsh_view];
         }
@@ -81,7 +86,7 @@
     }
     
     if (_footerView) {
-        CGFloat footerViewHeight = (_stationaryHeaderView && _stationaryHeaderView.offsetY >= 0) ? self.frame.size.height - _stationaryHeaderView.viewHeight - _stationaryHeaderView.offsetY : self.frame.size.height;
+        CGFloat footerViewHeight = self.frame.size.height - _stationaryHeaderView.viewHeight - _stationaryHeaderView.offsetY;
         _footerView.dsh_view.frame = CGRectMake(0, contentSize.height, self.frame.size.width, footerViewHeight);
         if (_footerView.dsh_view.superview != self) {
             [self addSubview:_footerView.dsh_view];
@@ -113,64 +118,62 @@
 #pragma mark -
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey,id> *)change context:(void *)context; {
     if (object == self) {
-        CGPoint contentOffset = self.contentOffset;
-        
-        // 处理手势冲突
-        if (_footerView && _scrollView) {
-            CGFloat content = self.contentSize.height - self.frame.size.height;
-            if (!_base_scroll_enabled) {
-                CGPoint baseContentOffset = CGPointMake(0, content);
-                if (!CGPointEqualToPoint(baseContentOffset, self.contentOffset)) {
-                    self.contentOffset = baseContentOffset;
-                }
-            } else if (self.contentOffset.y > content) {
-                _base_scroll_enabled = NO;
+        if (!CGPointEqualToPoint(_finalContentOffset, self.contentOffset)) {
+            _finalContentOffset = self.contentOffset;
+            [self _selfDidScroll];
+        }
+    }
+    if (object == _scrollView) {
+        if (!CGPointEqualToPoint(_scrollViewFinalContentOffset, _scrollView.contentOffset)) {
+            _scrollViewFinalContentOffset = _scrollView.contentOffset;
+            [self _scrollViewDidScroll];
+        }
+    }
+}
+- (void)_selfDidScroll; {
+    CGFloat offsetY = self.contentOffset.y;
+    // 处理手势冲突
+    if (_scrollView) {
+        if (offsetY > _offsetHeight) {
+            _baseScrollEnabled = NO;
+        }
+        if (!_baseScrollEnabled) {
+            self.contentOffset = CGPointMake(0, _offsetHeight);
+        }
+    }
+    // 实现头部视图缩放效果
+    if (_headerView) {
+        CGRect frame = _headerView.dsh_view.frame;
+        frame.origin.x = 0; frame.origin.y = 0;
+        frame.size.width = self.frame.size.width; // 拉满宽度
+        if (_headerView.scaleMode == DSHListHeaderViewScaleModeH) {
+            if (offsetY < 0) {
+                frame.origin.y = offsetY;
+                frame.size.height = _headerView.viewHeight + fabs(offsetY);
+            }
+        } else if (_headerView.scaleMode == DSHListHeaderViewScaleModeWH) {
+            if (offsetY < 0) {
+                frame.origin.y = offsetY;
+                frame.size.height = _headerView.viewHeight + fabs(offsetY);
+                double r = self.frame.size.width / _headerView.viewHeight;
+                frame.size.width = frame.size.height * r;
+                frame.origin.x = - (frame.size.width - self.frame.size.width) * .5; // 居中
+            }
+        } else if (_headerView.scaleMode == DSHListHeaderViewScaleModeStatic) {
+            if (offsetY < 0) {
+                frame.origin.y = offsetY;
             }
         }
-        
-        // 实现头部视图缩放效果
-        if (_headerView) {
-            CGRect frame = _headerView.dsh_view.frame;
-            frame.origin.x = 0; frame.origin.y = 0;
-            frame.size.width = self.frame.size.width; // 拉满宽度
-            if (_headerView.scaleMode == DSHListHeaderViewScaleModeNone) {
-                
-            } else if (_headerView.scaleMode == DSHListHeaderViewScaleModeH) {
-                if (contentOffset.y < 0) {
-                    frame.origin.y = contentOffset.y;
-                    frame.size.height = _headerView.viewHeight + fabs(contentOffset.y);
-                }
-            } else if (_headerView.scaleMode == DSHListHeaderViewScaleModeWH) {
-                if (contentOffset.y < 0) {
-                    frame.origin.y = contentOffset.y;
-                    frame.size.height = _headerView.viewHeight + fabs(contentOffset.y);
-                    double r = self.frame.size.width / _headerView.viewHeight;
-                    frame.size.width = frame.size.height * r;
-                    frame.origin.x = - (frame.size.width - self.frame.size.width) * .5; // 居中
-                }
-            } else if (_headerView.scaleMode == DSHListHeaderViewScaleModeStatic) {
-                if (contentOffset.y < 0) {
-                    frame.origin.y = contentOffset.y;
-                }
-            }
-            _headerView.dsh_view.frame = frame;
-        }
-        
-        // 悬浮效果
-        if (_stationaryHeaderView && _stationaryHeaderView.offsetY >= 0) {
-            CGRect frame = _stationaryHeaderView.dsh_view.frame;
-            frame.origin.y = _page_header_offset_y;
-            _stationaryHeaderView.dsh_view.frame = frame;
-        }
-        
-    } else if (object == _scrollView) {
-        if (_base_scroll_enabled) {
-            if (_scrollView.contentOffset.y != 0) {
-                _scrollView.contentOffset = CGPointZero;
-            }
-        } else if (_scrollView.contentOffset.y <= 0) {
-            _base_scroll_enabled = YES;
-        }
+        _headerView.dsh_view.frame = frame;
+    }
+}
+- (void)_scrollViewDidScroll; {
+    if (_baseScrollEnabled) {
+        _scrollView.contentOffset = CGPointZero;
+    }
+    if (_scrollView.contentOffset.y < 0) {
+        _scrollView.contentOffset = CGPointZero;
+        _baseScrollEnabled = YES;
     }
 }
 
@@ -225,11 +228,11 @@
     _scrollView = scrollView;
     if (_scrollView) {
         [_scrollView addObserver:self forKeyPath:@"contentOffset" options:NSKeyValueObservingOptionNew context:nil];
-        if (_base_scroll_enabled) {
+        if (_baseScrollEnabled) {
             _scrollView.contentOffset = CGPointZero;
         }
     } else {
-        _base_scroll_enabled = YES;
+        _baseScrollEnabled = YES;
     }
 }
 
