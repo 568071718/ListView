@@ -44,11 +44,27 @@
     frame.size.height = frame.size.height - frame.origin.y;
     _listView = [[DSHListView alloc] initWithFrame:frame];
     _listView.headerView = headerView;
-    _listView.pageViewHeader = pageViewHeader;
-    _listView.pageView = pageView;
+    _listView.stationaryHeaderView = pageViewHeader;
+    _listView.footerView = pageView;
     [self.view addSubview:_listView];
     
     [self pageViewController:pageView currentViewControllerIndexDidChange:pageView.currentViewControllerIndex];
+}
+
+- (void)viewDidLayoutSubviews; {
+    [super viewDidLayoutSubviews];
+    UIEdgeInsets safeAreaInsets = {0};
+    if (@available(iOS 11.0, *)) {
+        safeAreaInsets = self.view.safeAreaInsets;
+    } else {
+        safeAreaInsets.top = [UIApplication sharedApplication].statusBarFrame.size.height;
+    }
+    CGRect frame = {0};
+    frame.origin.x = safeAreaInsets.left;
+    frame.origin.y = safeAreaInsets.top;
+    frame.size.width = self.view.frame.size.width - safeAreaInsets.left - safeAreaInsets.right;
+    frame.size.height = self.view.frame.size.height - safeAreaInsets.top - safeAreaInsets.bottom;
+    _listView.frame = frame;
 }
 
 #pragma mark -
@@ -62,7 +78,7 @@
 }
 
 - (void)pageViewHeader:(XHPageViewHeader *)pageViewHeader clickedButtonWithButtonIndex:(NSInteger)buttonIndex; {
-    XHPageView *pageView = (XHPageView *)_listView.pageView;
+    XHPageView *pageView = (XHPageView *)_listView.footerView;
     BOOL aniamtion = labs(buttonIndex - pageView.currentViewControllerIndex) <= 1;
     [pageView setCurrentViewControllerIndex:buttonIndex animated:aniamtion];
 }

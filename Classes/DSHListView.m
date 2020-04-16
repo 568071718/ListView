@@ -13,13 +13,10 @@
     CGFloat _page_header_offset_y;
     BOOL _base_scroll_enabled;
 }
+@property (assign ,nonatomic) CGFloat currentWidth;
 @end
 
 @implementation DSHListView
-
-- (id)init; {
-    return [self initWithFrame:CGRectZero];
-}
 
 - (id)initWithFrame:(CGRect)frame; {
     self = [super initWithFrame:frame];
@@ -27,14 +24,13 @@
         [self __setup__];
     } return self;
 }
-
 - (void)awakeFromNib; {
     [super awakeFromNib];
     [self __setup__];
 }
-
 - (void)__setup__; {
     _base_scroll_enabled = YES;
+    _currentWidth = -1;
     self.alwaysBounceVertical = YES;
     self.showsVerticalScrollIndicator = NO;
     self.panGestureRecognizer.delegate = self;
@@ -43,65 +39,74 @@
     }
     [self addObserver:self forKeyPath:@"contentOffset" options:NSKeyValueObservingOptionNew context:nil];
 }
-
 - (void)dealloc; {
-    self.scrollView = nil;
+    [self setScrollView:nil];
     [self removeObserver:self forKeyPath:@"contentOffset"];
 }
-
 - (void)layoutSubviews; {
     [super layoutSubviews];
-    if (self.contentSize.width != self.frame.size.width) {
+    if (_currentWidth != self.frame.size.width) {
+        // 重新布局 重置自身 contentSize
+        _currentWidth = self.frame.size.width;
         [self reload];
     }
 }
-
 - (void)reload; {
-    [self.subviews makeObjectsPerformSelector:@selector(removeFromSuperview)];
-    
     CGSize contentSize = self.bounds.size;
     contentSize.height = 0;
+    
     if (_headerView) {
         _headerView.dsh_view.frame = CGRectMake(0, 0, self.frame.size.width, _headerView.viewHeight);
-        [self addSubview:_headerView.dsh_view];
+        if (_headerView.dsh_view.superview != self) {
+            [self addSubview:_headerView.dsh_view];
+        }
         contentSize.height += _headerView.viewHeight;
     }
     
     for (id<DSHListViewCell> cell in _cells) {
         cell.dsh_view.frame = CGRectMake(0, contentSize.height, self.frame.size.width, cell.viewHeight);
-        [self addSubview:cell.dsh_view];
+        if (cell.dsh_view.superview != self) {
+            [self addSubview:cell.dsh_view];
+        }
         contentSize.height += cell.viewHeight;
     }
     
-    if (_pageViewHeader) {
+    if (_stationaryHeaderView) {
         _page_header_offset_y = contentSize.height;
-        _pageViewHeader.dsh_view.frame = CGRectMake(0, _page_header_offset_y, self.frame.size.width, _pageViewHeader.viewHeight);
-        [self addSubview:_pageViewHeader.dsh_view];
-        contentSize.height += _pageViewHeader.viewHeight;
+        _stationaryHeaderView.dsh_view.frame = CGRectMake(0, _page_header_offset_y, self.frame.size.width, _stationaryHeaderView.viewHeight);
+        if (_stationaryHeaderView.dsh_view.superview != self) {
+            [self addSubview:_stationaryHeaderView.dsh_view];
+        }
+        contentSize.height += _stationaryHeaderView.viewHeight;
     }
     
-    if (_pageView) {
-        CGFloat pageViewHeight = (_pageViewHeader && _pageViewHeader.offsetY >= 0) ? self.frame.size.height - _pageViewHeader.viewHeight - _pageViewHeader.offsetY : self.frame.size.height;
-        _pageView.dsh_view.frame = CGRectMake(0, contentSize.height, self.frame.size.width, pageViewHeight);
-        [self addSubview:_pageView.dsh_view];
-        contentSize.height += pageViewHeight;
+    if (_footerView) {
+        CGFloat footerViewHeight = (_stationaryHeaderView && _stationaryHeaderView.offsetY >= 0) ? self.frame.size.height - _stationaryHeaderView.viewHeight - _stationaryHeaderView.offsetY : self.frame.size.height;
+        _footerView.dsh_view.frame = CGRectMake(0, contentSize.height, self.frame.size.width, footerViewHeight);
+        if (_footerView.dsh_view.superview != self) {
+            [self addSubview:_footerView.dsh_view];
+        }
+        contentSize.height += footerViewHeight;
+    }
+    
+    if (_stationaryHeaderView.dsh_view) {
+        [self bringSubviewToFront:_stationaryHeaderView.dsh_view];
     }
     self.contentSize = contentSize;
-    [self bringSubviewToFront:_pageViewHeader.dsh_view];
 }
 
-- (void)reloadData:(id)body; {
-    [self reloadData:body forSubview:_headerView];
-    [self reloadData:body forSubview:_pageViewHeader];
-    [self reloadData:body forSubview:_pageView];
+- (void)reloadData:(id)data; {
+    [self reloadData:data forSubview:_headerView];
+    [self reloadData:data forSubview:_stationaryHeaderView];
+    [self reloadData:data forSubview:_footerView];
     for (id<DSHListViewCell> cell in _cells) {
-        [self reloadData:body forSubview:cell];
+        [self reloadData:data forSubview:cell];
     }
 }
 
-- (void)reloadData:(id)body forSubview:(id<DSHListViewSubview>)subview; {
+- (void)reloadData:(id)data forSubview:(id<DSHListViewSubview>)subview; {
     if ([subview respondsToSelector:@selector(dsh_list_view_reloadData:)]) {
-        [subview dsh_list_view_reloadData:body];
+        [subview dsh_list_view_reloadData:data];
     }
 }
 
@@ -111,7 +116,7 @@
         CGPoint contentOffset = self.contentOffset;
         
         // 处理手势冲突
-        if (_pageView && _scrollView) {
+        if (_footerView && _scrollView) {
             CGFloat content = self.contentSize.height - self.frame.size.height;
             if (!_base_scroll_enabled) {
                 CGPoint baseContentOffset = CGPointMake(0, content);
@@ -131,13 +136,11 @@
             if (_headerView.scaleMode == DSHListHeaderViewScaleModeNone) {
                 
             } else if (_headerView.scaleMode == DSHListHeaderViewScaleModeH) {
-                // h
                 if (contentOffset.y < 0) {
                     frame.origin.y = contentOffset.y;
                     frame.size.height = _headerView.viewHeight + fabs(contentOffset.y);
                 }
             } else if (_headerView.scaleMode == DSHListHeaderViewScaleModeWH) {
-                // w + h
                 if (contentOffset.y < 0) {
                     frame.origin.y = contentOffset.y;
                     frame.size.height = _headerView.viewHeight + fabs(contentOffset.y);
@@ -154,10 +157,10 @@
         }
         
         // 悬浮效果
-        if (_pageViewHeader && _pageViewHeader.offsetY >= 0) {
-            CGRect frame = _pageViewHeader.dsh_view.frame;
+        if (_stationaryHeaderView && _stationaryHeaderView.offsetY >= 0) {
+            CGRect frame = _stationaryHeaderView.dsh_view.frame;
             frame.origin.y = _page_header_offset_y;
-            _pageViewHeader.dsh_view.frame = frame;
+            _stationaryHeaderView.dsh_view.frame = frame;
         }
         
     } else if (object == _scrollView) {
@@ -178,22 +181,40 @@
 
 #pragma mark -
 - (void)setHeaderView:(UIView<DSHListHeaderView> *)headerView; {
+    if (_headerView == headerView) {
+        return;
+    }
+    [_headerView.dsh_view removeFromSuperview];
     _headerView = headerView;
     [self reload];
 }
 
-- (void)setPageViewHeader:(UIView<DSHListPageViewHeader> *)pageViewHeader; {
-    _pageViewHeader = pageViewHeader;
+- (void)setStationaryHeaderView:(UIView<DSHListStationaryHeaderView> *)stationaryHeaderView; {
+    if (_stationaryHeaderView == stationaryHeaderView) {
+        return;
+    }
+    [_stationaryHeaderView.dsh_view removeFromSuperview];
+    _stationaryHeaderView = stationaryHeaderView;
     [self reload];
 }
 
 - (void)setCells:(NSArray<id<DSHListViewCell>> *)cells; {
+    if (_cells == cells) {
+        return;
+    }
+    for (id <DSHListViewCell>cell in _cells) {
+        [cell.dsh_view removeFromSuperview];
+    }
     _cells = cells;
     [self reload];
 }
 
-- (void)setPageView:(id<DSHListPageView>)pageView; {
-    _pageView = pageView;
+- (void)setFooterView:(id<DSHListFooterView>)footerView; {
+    if (_footerView == footerView) {
+        return;
+    }
+    [_footerView.dsh_view removeFromSuperview];
+    _footerView = footerView;
     [self reload];
 }
 

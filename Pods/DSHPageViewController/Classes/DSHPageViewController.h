@@ -25,4 +25,7 @@
 @property (assign ,nonatomic) NSInteger currentViewControllerIndex;
 - (void)setCurrentViewControllerIndex:(NSInteger)currentViewControllerIndex animated:(BOOL)animated;
 - (void)setCurrentViewControllerIndex:(NSInteger)currentViewControllerIndex animated:(BOOL)animated callDelegate:(BOOL)callDelegate; // callDelegate 是否触发代理回调 (仅在设置 animated 参数为 NO 的时候生效, 默认: YES)
+
+/// 提供一个方法用来让子类监听到页面变化事件
+- (void)currentViewControllerIndexDidChange:(NSInteger)currentViewControllerIndex;
 @end

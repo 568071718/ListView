@@ -12,7 +12,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface XHPageView : DSHPageViewController <DSHListPageView>
+@interface XHPageView : DSHPageViewController <DSHListFooterView>
 @end
 
 NS_ASSUME_NONNULL_END

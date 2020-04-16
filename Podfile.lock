@@ -10,7 +10,7 @@ EXTERNAL SOURCES:
 
 CHECKOUT OPTIONS:
   DSHPageViewController:
-    :commit: 950da129394865d661b0ca8d75c4f53c9be34857
+    :commit: 10e636670472ea135742e202cafe204d3ac6c8a1
     :git: https://github.com/568071718/PageViewController.git
 
 SPEC CHECKSUMS:
@@ -18,4 +18,4 @@ SPEC CHECKSUMS:
 
 PODFILE CHECKSUM: 7e5f530ec0f8db29b260c71116ec6054e85a5dce
 
-COCOAPODS: 1.5.0
+COCOAPODS: 1.5.3

@@ -17,7 +17,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)pageViewHeader:(XHPageViewHeader *)pageViewHeader clickedButtonWithButtonIndex:(NSInteger)buttonIndex;
 @end
 
-@interface XHPageViewHeader : UIView <DSHListPageViewHeader>
+@interface XHPageViewHeader : UIView <DSHListStationaryHeaderView>
 
 @property (assign ,nonatomic) CGFloat viewHeight;
 @property (assign ,nonatomic) CGFloat offsetY;
